@@ -18,8 +18,8 @@ require({
     var aliasWavefrontFile = new AliasWavefrontFile("models/car.obj");
 
     aliasWavefrontFile.read()
-        .done(function(objects) {
-            var world = new World(objects);
+        .done(function(objectGroup) {
+            var world = new World(objectGroup);
 
             world.render();
         })
