@@ -14,7 +14,8 @@ require({
     util,
     AliasWavefrontFile,
     World
-) {
+) { "use strict";
+
     var aliasWavefrontFile = new AliasWavefrontFile("models/car.obj");
 
     aliasWavefrontFile.read()
