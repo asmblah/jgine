@@ -23,7 +23,7 @@ require({
 
             world.render();
         })
-        .fail(function() {
-            alert("Could not load file");
+        .fail(function(error) {
+            alert("Could not load file - " + error);
         });
 });
