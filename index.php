@@ -53,7 +53,24 @@
                 width: 100%; height: 100%;
             }
             body {
+                padding: 1em;
+
                 background: black;
+                color: white;
+                font-family: Helvetica, Arial, sans-serif;
+            }
+            #info {
+                overflow: auto;
+            }
+            #info dt {
+                float: left;
+
+                width: 40px;
+
+                font-weight: bold;
+            }
+            #info dd {
+                margin-left: 40px;
             }
             #canvas {
                 border: solid white 1px;
@@ -68,6 +85,10 @@
     </head>
     <body>
         <h1>jGine demo</h1>
+
+        <dl id="info">
+            <dt>FPS:</dt> <dd id="fps"></dd>
+        </dl>
 
         <canvas id="canvas" width="640" height="480">
             <p>Sorry, your browser doesn't support HTML5.</p>

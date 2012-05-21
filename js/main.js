@@ -9,79 +9,97 @@ require({
 }, [
     "js/util",
     "js/classes/Promise",
-    "js/classes/WebGL",
+    "js/classes/Renderer/Canvas/WebGL",
     "js/classes/File/AliasWavefront",
+    "js/classes/World",
     "js/classes/Camera",
-    "js/classes/World"
+    "js/classes/Input/DirectionalPad"
 ], function (
     util,
     Promise,
-    WebGL,
+    WebGLCanvasRenderer,
     AliasWavefrontFile,
+    World,
     Camera,
-    World
+    DirectionalPad
 ) { "use strict";
 
     var canvas = document.getElementById("canvas"),
-        webGL = new WebGL(canvas),
+        webGLRenderer = new WebGLCanvasRenderer(canvas),
         aliasWavefrontFile = new AliasWavefrontFile("models/car.obj");
 
-    webGL.init()
+    var requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||  
+        window.webkitRequestAnimationFrame || window.msRequestAnimationFrame ||
+        function (callback) {
+            setTimeout(callback, 1000/60);
+        };
+
+    webGLRenderer.init()
         .done(function () {
             aliasWavefrontFile.read()
                 .done(function (materials, objects) {
-                    var KEY_UP = 38,
-                        KEY_DOWN = 40,
-                        KEY_LEFT = 37,
-                        KEY_RIGHT = 39,
-                        KEY_W = 87,
-                        KEY_S = 83;
 
                     var world = new World(materials, objects),
                         camera = new Camera(world),
+                        pad = new DirectionalPad(),
+                        fps = 0,
+                        nextSecond = Date.now() + 1000,
                         angle = 0,
                         cameraX = -1.0,
-                        cameraY = 0.0,
+                        cameraY = -1.5,
                         cameraZ = -6.0;
 
-                    world.init()
+                    pad.init()
                         .done(function () {
-                            document.addEventListener("keydown", function (evt) {
-                                //alert(evt.keyCode);
+                            world.init()
+                                .done(function () {
 
-                                if (evt.keyCode === KEY_UP) {
-                                    cameraZ += 0.1;
-                                } else if (evt.keyCode === KEY_DOWN) {
-                                    cameraZ -= 0.1;
-                                } else if (evt.keyCode === KEY_LEFT) {
-                                    cameraX += 0.1;
-                                } else if (evt.keyCode === KEY_RIGHT) {
-                                    cameraX -= 0.1;
-                                } else if (evt.keyCode === KEY_W) {
-                                    cameraY -= 0.1;
-                                } else if (evt.keyCode === KEY_S) {
-                                    cameraY += 0.1;
-                                }
+                                    world.load(webGLRenderer);
 
-                                evt.preventDefault();
-                            }, false);
+                                    requestAnimationFrame(function renderLoop() {
+                                        var modelViewMatrix = camera.getWorldMatrix();
 
-                            world.load(webGL);
+                                        if (pad.up) {
+                                            cameraZ += 0.1;
+                                        }
+                                        if (pad.down) {
+                                            cameraZ -= 0.1;
+                                        }
+                                        if (pad.left) {
+                                            cameraX += 0.1;
+                                        }
+                                        if (pad.right) {
+                                            cameraX -= 0.1;
+                                        }
 
-                            setInterval(function () {
-                                var modelViewMatrix = camera.getWorldMatrix();
+                                        modelViewMatrix.loadIdentity();
+                                        modelViewMatrix.rotateY(angle);
+                                        modelViewMatrix.translate(cameraX, cameraY, cameraZ);
 
-                                modelViewMatrix.loadIdentity();
-                                modelViewMatrix.rotateY(angle);
-                                modelViewMatrix.translate(cameraX, cameraY, cameraZ);
+                                        angle += Math.PI/180;
 
-                                angle += Math.PI/180;
+                                        //webGLRenderer.clear();
 
-                                camera.renderView(webGL);
-                            }, 1000 / 30);
-                        })
-                        .fail(function () {
-                            alert("Failed to load some resources");
+                                        camera.renderView(webGLRenderer);
+                                        /*modelViewMatrix.loadIdentity();
+                                        modelViewMatrix.rotateY(-angle);
+                                        modelViewMatrix.translate(cameraX, cameraY + 1.5, cameraZ);
+                                        camera.renderView(webGLRenderer);*/
+
+                                        ++fps;
+                                        if (Date.now() > nextSecond) {
+                                            document.getElementById("fps").textContent = fps;
+                                            fps = 0;
+                                            nextSecond = Date.now() + 1000;
+                                        }
+
+                                        // Render next frame when ready
+                                        requestAnimationFrame(renderLoop);
+                                    });
+                                })
+                                .fail(function () {
+                                    alert("Failed to load some resources");
+                                });
                         });
                 })
                 .fail(function (error) {
