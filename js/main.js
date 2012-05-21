@@ -10,71 +10,79 @@ require({
     "js/util",
     "js/classes/Promise",
     "js/classes/WebGL",
-    "js/classes/WebGL/Program",
-    "js/classes/WebGL/Shader/Vertex",
-    "js/classes/WebGL/Shader/Fragment",
     "js/classes/File/AliasWavefront",
+    "js/classes/Camera",
     "js/classes/World"
 ], function (
     util,
     Promise,
     WebGL,
-    WebGLProgram,
-    WebGLVertexShader,
-    WebGLFragmentShader,
     AliasWavefrontFile,
+    Camera,
     World
 ) { "use strict";
 
-    function getScript(id) {
-        return document.getElementById(id).textContent;
-    }
-
-    function initWebGL() {
-        var promise = new Promise(webGL);
-
-        webGL.init()
-            .done(function () {
-                webGLVertexShader.compile()
-                    .done(function () {
-                        webGLFragmentShader.compile()
-                            .done(function () {
-                                webGLProgram
-                                    .attach(webGLVertexShader)
-                                    .attach(webGLFragmentShader)
-                                    .link()
-                                        .done(function () {
-                                            promise.resolve();
-                                        });
-                            })
-                            .fail(function () {
-                                promise.reject();
-                            });
-                    })
-                    .fail(function () {
-                        promise.reject();
-                    });
-            }).fail(function () {
-                promise.reject();
-            });
-
-        return promise;
-    }
-
     var canvas = document.getElementById("canvas"),
         webGL = new WebGL(canvas),
-        webGLProgram = new WebGLProgram(webGL),
-        webGLVertexShader = new WebGLVertexShader(webGL, getScript("vertexShader")),
-        webGLFragmentShader = new WebGLFragmentShader(webGL, getScript("fragmentShader")),
         aliasWavefrontFile = new AliasWavefrontFile("models/car.obj");
 
-    initWebGL()
+    webGL.init()
         .done(function () {
             aliasWavefrontFile.read()
-                .done(function (objectGroup) {
-                    var world = new World(objectGroup);
+                .done(function (materials, objects) {
+                    var KEY_UP = 38,
+                        KEY_DOWN = 40,
+                        KEY_LEFT = 37,
+                        KEY_RIGHT = 39,
+                        KEY_W = 87,
+                        KEY_S = 83;
 
-                    world.render();
+                    var world = new World(materials, objects),
+                        camera = new Camera(world),
+                        angle = 0,
+                        cameraX = -1.0,
+                        cameraY = 0.0,
+                        cameraZ = -6.0;
+
+                    world.init()
+                        .done(function () {
+                            document.addEventListener("keydown", function (evt) {
+                                //alert(evt.keyCode);
+
+                                if (evt.keyCode === KEY_UP) {
+                                    cameraZ += 0.1;
+                                } else if (evt.keyCode === KEY_DOWN) {
+                                    cameraZ -= 0.1;
+                                } else if (evt.keyCode === KEY_LEFT) {
+                                    cameraX += 0.1;
+                                } else if (evt.keyCode === KEY_RIGHT) {
+                                    cameraX -= 0.1;
+                                } else if (evt.keyCode === KEY_W) {
+                                    cameraY -= 0.1;
+                                } else if (evt.keyCode === KEY_S) {
+                                    cameraY += 0.1;
+                                }
+
+                                evt.preventDefault();
+                            }, false);
+
+                            world.load(webGL);
+
+                            setInterval(function () {
+                                var modelViewMatrix = camera.getWorldMatrix();
+
+                                modelViewMatrix.loadIdentity();
+                                modelViewMatrix.rotateY(angle);
+                                modelViewMatrix.translate(cameraX, cameraY, cameraZ);
+
+                                angle += Math.PI/180;
+
+                                camera.renderView(webGL);
+                            }, 1000 / 30);
+                        })
+                        .fail(function () {
+                            alert("Failed to load some resources");
+                        });
                 })
                 .fail(function (error) {
                     alert("Could not load file - " + error);
