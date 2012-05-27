@@ -9,104 +9,89 @@ require({
 }, [
     "js/util",
     "js/classes/Promise",
-    "js/classes/Renderer/Canvas/WebGL",
+    "js/classes/Scene",
     "js/classes/File/AliasWavefront",
-    "js/classes/World",
     "js/classes/Camera",
     "js/classes/Input/DirectionalPad"
 ], function (
     util,
     Promise,
-    WebGLCanvasRenderer,
+    Scene,
     AliasWavefrontFile,
-    World,
     Camera,
     DirectionalPad
 ) { "use strict";
 
-    var canvas = document.getElementById("canvas"),
-        webGLRenderer = new WebGLCanvasRenderer(canvas),
-        aliasWavefrontFile = new AliasWavefrontFile("models/car.obj");
+    var aliasWavefrontFile = new AliasWavefrontFile("models/car.obj");
 
-    var requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||  
-        window.webkitRequestAnimationFrame || window.msRequestAnimationFrame ||
-        function (callback) {
-            setTimeout(callback, 1000/60);
-        };
+    aliasWavefrontFile.read()
+        .done(function (materials, objects) {
 
-    webGLRenderer.init()
-        .done(function () {
-            aliasWavefrontFile.read()
-                .done(function (materials, objects) {
+            var scene = new Scene(materials, objects),
+                camera = new Camera(),
+                pad = new DirectionalPad(),
+                fps = 0,
+                nextSecond = Date.now() + 1000,
+                angle = 0,
+                cameraX = -1.0,
+                cameraY = -1.5,
+                cameraZ = -6.0;
 
-                    var world = new World(materials, objects),
-                        camera = new Camera(world),
-                        pad = new DirectionalPad(),
-                        fps = 0,
-                        nextSecond = Date.now() + 1000,
-                        angle = 0,
-                        cameraX = -1.0,
-                        cameraY = -1.5,
-                        cameraZ = -6.0;
-
-                    pad.init()
+            pad.init()
+                .done(function () {
+                    scene.init()
                         .done(function () {
-                            world.init()
-                                .done(function () {
+                            // Add the canvas to the document
+                            var canvas = this.getCanvas();
+                            canvas.id = "canvas";
+                            document.body.appendChild(canvas);
 
-                                    world.load(webGLRenderer);
+                            scene.renderLoop(function () {
+                                var modelViewMatrix = camera.getWorldMatrix();
 
-                                    requestAnimationFrame(function renderLoop() {
-                                        var modelViewMatrix = camera.getWorldMatrix();
+                                if (pad.up) {
+                                    cameraZ += 0.1;
+                                }
+                                if (pad.down) {
+                                    cameraZ -= 0.1;
+                                }
+                                if (pad.left) {
+                                    cameraX += 0.1;
+                                }
+                                if (pad.right) {
+                                    cameraX -= 0.1;
+                                }
 
-                                        if (pad.up) {
-                                            cameraZ += 0.1;
-                                        }
-                                        if (pad.down) {
-                                            cameraZ -= 0.1;
-                                        }
-                                        if (pad.left) {
-                                            cameraX += 0.1;
-                                        }
-                                        if (pad.right) {
-                                            cameraX -= 0.1;
-                                        }
+                                modelViewMatrix.loadIdentity();
+                                modelViewMatrix.rotateY(angle);
+                                modelViewMatrix.translate(cameraX, cameraY, cameraZ);
 
-                                        modelViewMatrix.loadIdentity();
-                                        modelViewMatrix.rotateY(angle);
-                                        modelViewMatrix.translate(cameraX, cameraY, cameraZ);
+                                angle += Math.PI/180;
 
-                                        angle += Math.PI/180;
+                                //renderer.clear();
 
-                                        //webGLRenderer.clear();
+                                scene.render(camera);
+                                /*modelViewMatrix.loadIdentity();
+                                modelViewMatrix.rotateY(-angle);
+                                modelViewMatrix.translate(cameraX, cameraY + 1.5, cameraZ);
+                                scene.render(camera);*/
 
-                                        camera.renderView(webGLRenderer);
-                                        /*modelViewMatrix.loadIdentity();
-                                        modelViewMatrix.rotateY(-angle);
-                                        modelViewMatrix.translate(cameraX, cameraY + 1.5, cameraZ);
-                                        camera.renderView(webGLRenderer);*/
+                                ++fps;
+                                if (Date.now() > nextSecond) {
+                                    document.getElementById("fps").textContent = fps;
+                                    fps = 0;
+                                    nextSecond = Date.now() + 1000;
+                                }
 
-                                        ++fps;
-                                        if (Date.now() > nextSecond) {
-                                            document.getElementById("fps").textContent = fps;
-                                            fps = 0;
-                                            nextSecond = Date.now() + 1000;
-                                        }
-
-                                        // Render next frame when ready
-                                        requestAnimationFrame(renderLoop);
-                                    });
-                                })
-                                .fail(function () {
-                                    alert("Failed to load some resources");
-                                });
+                                document.getElementById("renderer").textContent = scene.getRenderer().getName();
+                            });
+                        })
+                        .fail(function () {
+                            alert("Failed to load some resources");
                         });
-                })
-                .fail(function (error) {
-                    alert("Could not load file - " + error);
                 });
         })
         .fail(function (error) {
-            throw new Error("Failed to init WebGL - " + error);
+            alert("Could not load file - " + error);
         });
 });
