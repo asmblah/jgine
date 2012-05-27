@@ -65,15 +65,17 @@
             #info dt {
                 float: left;
 
-                width: 40px;
+                width: 100px;
 
                 font-weight: bold;
             }
             #info dd {
                 margin-left: 40px;
             }
-            #canvas {
+            #canvas, #svgCanvas {
                 border: solid white 1px;
+
+                position: relative;
 
                 display: block;
 
@@ -81,17 +83,21 @@
 
                 background: white;
             }
+            #svgCanvas > img {
+                position: absolute;
+                top: 0; left: 0;
+            }
+            #svgCanvas {
+                display: none;
+            }
         </style>
     </head>
     <body>
         <h1>jGine demo</h1>
 
         <dl id="info">
-            <dt>FPS:</dt> <dd id="fps"></dd>
+            <dt>FPS:</dt> <dd id="fps">...</dd>
+            <dt>Renderer:</dt> <dd id="renderer">...</dd>
         </dl>
-
-        <canvas id="canvas" width="640" height="480">
-            <p>Sorry, your browser doesn't support HTML5.</p>
-        </canvas>
     </body>
 </html>
