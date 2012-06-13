@@ -10,21 +10,19 @@ require({
     "js/util",
     "js/classes/Promise",
     "js/classes/Scene",
-    "js/classes/File/AliasWavefront",
+    "js/classes/File/AliasWavefront/Obj",
     "js/classes/Camera",
     "js/classes/Input/DirectionalPad"
 ], function (
     util,
     Promise,
     Scene,
-    AliasWavefrontFile,
+    AliasWavefrontObjFile,
     Camera,
     DirectionalPad
 ) { "use strict";
 
-    var aliasWavefrontFile = new AliasWavefrontFile("models/car.obj");
-
-    aliasWavefrontFile.read()
+    new AliasWavefrontObjFile("models/car.obj").read()
         .done(function (materials, objects) {
 
             var scene = new Scene(materials, objects),
